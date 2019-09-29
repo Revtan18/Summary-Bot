@@ -1,6 +1,7 @@
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from telebot import TeleBot
 import config
+import re
 
 bot = TeleBot(config.token)
 
@@ -11,6 +12,19 @@ class User:
 
     def __init__(self, name):
         self.name = name
+        self.surname = None
+        self.second_name = None
+        self.data_birth = None
+        self.country = None
+        self.city = None
+        self.education = None
+        self.work = None # выбранная профессия(пункт 8)
+        self.math = None
+        self.knowledge_web = None
+        self.target = None
+        self.knowledge_it = None
+        self.experience = None
+        self.reason = None
 
 
 @bot.message_handler(commands=['start'])
@@ -30,11 +44,13 @@ def start_message(message):
 @bot.callback_query_handler(func=lambda call: call.data in ('a', 'b', 'c'))
 def callback_inline(call):
     if call.data == 'a':
-        msg = bot.reply_to(call.message, 'Отлично! Тогда давай приступим, как тебя зовут?')
+        bot.send_message(call.message.chat.id, 'Превосходно! Я тоже не люблю долго ждать.')
     elif call.data == 'b':
-        msg = bot.reply_to(call.message, 'Ну чтож, значит сейчас разберешься. Как тебя зовут?')
+        bot.send_message(call.message.chat.id, 'НЕТ??? Ну чтож, тогда продолжай сидеть и ждать у моря погоды. Можешь своими делами заняться. Ой, погоди, так у тебя же наручники на руках Наверно, тебе будет не очень удобно')
+        return
     else:
-        msg = bot.reply_to(call.message, 'Ну все, развезло. А я еще только начал. Вот, держи водички. А я перейду к вопросам. Как тебя зовут?')
+        bot.send_message(call.message.chat.id, 'Ага, не любишь такие шутки. Принял, давай хотя бы сниму наручники. В следующий раз буду умнее.')
+    msg = bot.reply_to(call.message, 'Ты там писать то сможешь? Надеюсь, что да. Прежде всего мне нужно знать, как называть тебя. Скажи мне только своё имя.')
     bot.register_next_step_handler(msg, process_name_step)
 
 
@@ -44,10 +60,91 @@ def process_name_step(message):
         name = message.text
         user = User(name)
         user_dict[chat_id] = user
-        bot.send_message(chat_id, 'Nice to meet you ' + user.name + '\nGrats!')
+        msg = bot.reply_to(message, 'Прогресс, {}. Теперь мне нужна твоя фамилия'.format(name))
+        bot.register_next_step_handler(msg, process_surname_step)
     except Exception as e:
         bot.reply_to(message, 'oops')
 	
+
+def process_surname_step(message):
+    try:
+        chat_id = message.chat.id
+        surname = message.text
+        user = user_dict[chat_id]
+        user.surname = surname
+        msg = bot.reply_to(message, 'Есть отчество? Тогда оно мне тоже пригодится. Если нет, напиши просто “–“ (Без кавычек)')
+        bot.register_next_step_handler(msg, process_secondname_step)
+    except Exception as e:
+        bot.reply_to(message, 'oops')
+        
+
+def process_secondname_step(message):
+    try:
+        chat_id = message.chat.id
+        secondname = message.text
+        user = user_dict[chat_id]
+        if not secondname == '-':
+            user.secondname = secondname
+        else:
+            user.secondname = ''
+        msg = bot.reply_to(message, 'Отлично! Теперь посмотрим, насколько ты старик. Укажи свою дату рождения в формате ДД.ММ.ГГ')
+        bot.register_next_step_handler(msg, process_data_birth_step)
+    except Exception as e:
+        bot.reply_to(message, 'oops')
+        
+
+def process_data_birth_step(message):
+    try:
+        chat_id = message.chat.id
+        data_birth = message.text
+        user = user_dict[chat_id]
+        for i in data_birth.split('.'):
+            if not i.isdigit():
+                msg = bot.reply_to(message, 'Неверный ввод, попробуй ещё раз)')
+                bot.register_next_step_handler(msg, process_data_birth_step)
+                return
+        user.data_birth = data_birth
+        msg = bot.reply_to(message, 'Слушай, а ты, собственно, откуда? Напиши страну, в которой ты живёшь?')
+        bot.register_next_step_handler(msg, process_country_step)
+    except Exception as e:
+        bot.reply_to(message, 'oops')
+
+
+def process_country_step(message):
+    try:
+        chat_id = message.chat.id
+        country = message.text
+        user = user_dict[chat_id]
+        user.country = country
+        msg = bot.reply_to(message, 'Ага, {} значит. Давай чуть подробнее, а то на карте это довольно большая точка. Напиши город, в котором проживаешь'.format(country))
+        bot.register_next_step_handler(msg, process_city_step)
+    except Exception as e:
+        bot.reply_to(message, 'oops')
+
+
+def process_city_step(message):
+    try:
+        chat_id = message.chat.id
+        city = message.text
+        user = user_dict[chat_id]
+        user.city = city
+        msg = bot.reply_to(message, 'Уже неплохо. Как видишь, это не так уж и сложно. Перейдём на более профессиональную тему. У тебя есть высшее образование?  (Да/Нет)')
+        bot.register_next_step_handler(msg, process_education_step)
+    except Exception as e:
+        bot.reply_to(message, 'oops')
+
+
+def process_city_step(message):
+    try:
+        chat_id = message.chat.id
+        education = message.text
+        user = user_dict[chat_id]
+        user.education = education
+        msg = bot.reply_to(message, 'Теперь посмотрим, какой именно потенциальной угрозой ты являешься для общества. Мне нужно знать, кем ты являешься по образованию')
+        bot.register_next_step_handler(msg, process_work_step)
+    except Exception as e:
+        bot.reply_to(message, 'oops')
+
 
 
 if __name__ == '__main__':
