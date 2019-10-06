@@ -34,9 +34,9 @@ def start_message(message):
     yes_bottom = InlineKeyboardButton (text='Да' , callback_data='a')
     no_bottom = InlineKeyboardButton (text= "Нет", callback_data='b')
     some_bottom = InlineKeyboardButton (text= "Ты в каком это тоне со мной разговариваешь???", callback_data='c')
-    
+
     keyboard.add (yes_bottom, no_bottom,)
-    keyboard.add (some_bottom) 
+    keyboard.add (some_bottom)
 
     bot.send_message(message.chat.id, 'Ну здравствуй! Лампа не сильно в глаза светит? Наручники не трут? Ну ничего, привыкнешь.\n Я бот - специалист по извлечению резюме из таких как ты. И вопросы здесь задаю я. \n Это понятно?', reply_markup=keyboard)
 
@@ -54,6 +54,7 @@ def callback_inline(call):
     bot.register_next_step_handler(msg, process_name_step)
 
 
+
 def process_name_step(message):
     try:
         chat_id = message.chat.id
@@ -61,10 +62,11 @@ def process_name_step(message):
         user = User(name)
         user_dict[chat_id] = user
         msg = bot.reply_to(message, 'Прогресс, {}. Теперь мне нужна твоя фамилия'.format(name))
-        bot.register_next_step_handler(msg, process_surname_step)
+        # bot.register_next_step_handler(msg, process_surname_step)
+        bot.register_next_step_handler(msg, process_education_step)
     except Exception as e:
         bot.reply_to(message, 'oops')
-	
+
 
 def process_surname_step(message):
     try:
@@ -76,7 +78,7 @@ def process_surname_step(message):
         bot.register_next_step_handler(msg, process_secondname_step)
     except Exception as e:
         bot.reply_to(message, 'oops')
-        
+
 
 def process_secondname_step(message):
     try:
@@ -91,7 +93,7 @@ def process_secondname_step(message):
         bot.register_next_step_handler(msg, process_data_birth_step)
     except Exception as e:
         bot.reply_to(message, 'oops')
-        
+
 
 def process_data_birth_step(message):
     try:
@@ -134,17 +136,69 @@ def process_city_step(message):
         bot.reply_to(message, 'oops')
 
 
-def process_city_step(message):
+def process_education_step(message):
     try:
         chat_id = message.chat.id
         education = message.text
         user = user_dict[chat_id]
         user.education = education
-        msg = bot.reply_to(message, 'Теперь посмотрим, какой именно потенциальной угрозой ты являешься для общества. Мне нужно знать, кем ты являешься по образованию')
-        bot.register_next_step_handler(msg, process_work_step)
+
+        markup = InlineKeyboardMarkup()
+        programmer = InlineKeyboardButton(text='Программист', callback_data='programmer')
+        marketer   = InlineKeyboardButton(text='Маркетолог', callback_data='marketer')
+        designer   = InlineKeyboardButton(text='Дизайнер', callback_data='designer')
+        manager    = InlineKeyboardButton(text='Менеджер по продажам', callback_data='manager')
+        other      = InlineKeyboardButton(text='Другое', callback_data='other')
+        markup.add(programmer, marketer, designer, manager, other)
+
+        msg = bot.reply_to(message, 'Теперь посмотрим, какой именно потенциальной угрозой ты являешься для общества. Мне нужно знать, кем ты являешься по образованию'
+                , reply_markup=markup)
+        bot.register_next_step_handler(msg, process_education_step)
     except Exception as e:
         bot.reply_to(message, 'oops')
 
+
+@bot.callback_query_handler(func=lambda call: call.data in ('programmer', 'marketer', 'designer', 'manager', 'other'))
+def process_work_step(call):
+    print(call.text)
+    try:
+        if call.data == 'other':
+            msg = bot.reply_to(call.message, 'Я вижу, ты не простой орешек. Ну тогда отвечай сам, что это там за такая профессия.')
+            bot.register_next_step_handler(msg, process_other_work_step)
+        else:
+            chat_id = call.message.chat.id
+            print('Yep')
+            work = call.message.text
+            user = user_dict[chat_id]
+            user.work = education
+            msg = bot.reply_to(call.message, 'Теперь давай углубимся в твои знания. Как у тебя дела с математикой? Любишь ли ты этот предмет? Оцени свою искренние чувства по пятибалльной шкале, где 5 – люблю и уважаю, а 1 – терпеть не могу.')
+            bot.register_next_step_handler(msg, process_math_step)
+    except Exception as e:
+        bot.reply_to(call.message, 'oops')
+
+
+def process_other_work_step(message):
+    try:
+        chat_id = message.chat.id
+        work = message.text
+        user = user_dict[chat_id]
+        user.work = work
+        msg = bot.reply_to(message, 'Теперь давай углубимся в твои знания. Как у тебя дела с математикой? Любишь ли ты этот предмет? Оцени свою искренние чувства по пятибалльной шкале, где 5 – люблю и уважаю, а 1 – терпеть не могу.')
+        bot.register_next_step_handler(msg, process_math_step)
+    except Exception as e:
+        bot.reply_to(message, 'oops')
+
+
+def process_math_step(message):
+    try:
+        chat_id = message.chat.id
+        city = message.text
+        user = user_dict[chat_id]
+        user.city = city
+        msg = bot.reply_to(message, 'Меня радуют твои успехи. Не устал? Тогда давай посмотрим, с какими знаниями IT ты пришёл ко мне. Для начала очевидное. Тебе известно понятия Frontend и Backend. Ты понимаешь их отличия? Если не понимаешь, не молчи, я расскажу тебе об этом.')
+        bot.register_next_step_handler(msg, process_education_step)
+    except Exception as e:
+        bot.reply_to(message, 'oops')
 
 
 if __name__ == '__main__':
